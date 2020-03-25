@@ -49,18 +49,24 @@ In this assignment, we will solve a classification problem using the Caravan dat
 
 #### Problems
 1. Train the following ML algorithms on the training datasets, compute the expected classification errors for each method using cross-validation.
-• logistic regression
-• linear discriminant analysis
-• support vector machine with linear kernel
-• support vector machine with radial kernel
-• feed-forward neural network (single or multiple hidden layers)
-• AdaBoost 
+* logistic regression
+* linear discriminant analysis
+* support vector machine with linear kernel
+* support vector machine with radial kernel
+* feed-forward neural network (single or multiple hidden layers)
+* AdaBoost 
 
 2. Evaluate the classification algorithms on the testing dataset. Are the expected classification errors computed above accurate?
 3. Build a best ensemble classifier using the existing built classifiers from question 1. Is the performance better?
 4. Comment on/propose possible approaches to improve the classifier.
 
+## Homework 4 Instruction
+The primary goal of this project is to apply unsupervised learning algorithms to detect the population structure using the DNA information from samples. In this case, each sample is represented by 2,540 genetic markers (more precisely, SNPs) from the human genetic diversity panel (HGDP) data. Although each marker may provide very limited population structure information, the combination of all the markers can potentially improved the performance of population clustering dramatically.
 
-
+#### Problems
+1. Use PCA to explore the population structure using the only the genotype data (i.e., ignore sampling location and continent information for now).  
+2. Visualize the cluster structures identified from PCA, color each sample point using its continental information. (you may wish to plot multiple pairs of PCs). 
+3. Comment on the cluster structures identified from the PCA analysis.  
+4. Do research on the emerging technique known as “t-distributed stochastic neighbor embedding”, or, t-SNE, apply it to the data set. Summarize its connection and difference with PCA. Comment on the t-SNE result in comparison to the PCA result of the HGDP data.
 
 
