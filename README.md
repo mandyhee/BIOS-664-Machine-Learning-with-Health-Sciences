@@ -2,7 +2,7 @@
 
 This repo contains homework assignments from University of Michigan Biostatistics course BIOS 664 Machine Learning with Health Sciences.
 
-### Homework 1 Instruction
+## Homework 1 Instruction
 For this homework, use the R code in the "simple classification.R" to generate a set of training data.
 #### Problems
 1. Implement a bootstrap method to estimate the prediction error (EPE) of the linear classier that we used in the class and compare it to the K-fold cross-validation results for K = 2; 5 and 10.
@@ -16,7 +16,7 @@ For this homework, use the R code in the "simple classification.R" to generate a
 (b) Compare the knn classier to the naive Bayes classier implemented in the caret package. Given a brief summary on your conclusions.
 
 
-### Homework 2 Instruction
+## Homework 2 Instruction
 The primary goal of this assignment is to construct linear prediction algorithms to predict gene expression levels using genetic variants. 
 
 The whole data set contains text formatted data files for 2 genes: ENSG00000238142.1 and ENSG00000146574.15, as indicated by the corresponding file names. There are 3 separate files for each gene:
@@ -40,10 +40,25 @@ The whole data set contains text formatted data files for 2 genes: ENSG000002381
 
 6. Comments on the prediction functions you have constructed from 1 - 5. Which prediction function do you expect to have the best performance on the testing data? Why?  
 
-7. Apply the prediction functions constructed from 1 - 5 to corresponding testing data set. Organize your prediction results into a text file (space or tab delimited) using the following format with the appropriate header:
- `predict_single predict_stepwise ... predict_enet val_ind_1_by_single ...`
-  `val_ind_2_by_single ......val_ind_100_by_single ...`
+7. Apply the prediction functions constructed from 1 - 5 to corresponding testing data set. Organize your prediction results into a text file (space or tab delimited) using the following format with the appropriate header:  
+ `predict_single predict_stepwise ... predict_enet val_ind_1_by_single ...` 
+  `val_ind_2_by_single ......val_ind_100_by_single ...`  
 
+## Homework 3 Instruction
+In this assignment, we will solve a classification problem using the Caravan dataset including in the R library `ILSR`. This data set includes 85 predictors that measure demographic characteristics for 5,822 individuals. The binary response variable (last column of the data matrix) is Purchase, which indicates whether or not a given individual purchases a caravan insurance policy. In this data set, only 6% of people purchased caravan insurance.
+
+#### Problems
+1. Train the following ML algorithms on the training datasets, compute the expected classification errors for each method using cross-validation.
+• logistic regression
+• linear discriminant analysis
+• support vector machine with linear kernel
+• support vector machine with radial kernel
+• feed-forward neural network (single or multiple hidden layers)
+• AdaBoost 
+
+2. Evaluate the classification algorithms on the testing dataset. Are the expected classification errors computed above accurate?
+3. Build a best ensemble classifier using the existing built classifiers from question 1. Is the performance better?
+4. Comment on/propose possible approaches to improve the classifier.
 
 
 
