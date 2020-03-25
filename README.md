@@ -41,8 +41,8 @@ The whole data set contains text formatted data files for 2 genes: ENSG000002381
 6. Comments on the prediction functions you have constructed from 1 - 5. Which prediction function do you expect to have the best performance on the testing data? Why?  
 
 7. Apply the prediction functions constructed from 1 - 5 to corresponding testing data set. Organize your prediction results into a text file (space or tab delimited) using the following format with the appropriate header:  
- `predict_single predict_stepwise ... predict_enet val_ind_1_by_single ...` 
-  `val_ind_2_by_single ......val_ind_100_by_single ...`  
+ `predict_single       predict_stepwise        predict_enet` 
+ `val_ind_1_by_single  val_ind_2_by_single     val_ind_100_by_single `  
 
 ## Homework 3 Instruction
 In this assignment, we will solve a classification problem using the Caravan dataset including in the R library `ILSR`. This data set includes 85 predictors that measure demographic characteristics for 5,822 individuals. The binary response variable (last column of the data matrix) is Purchase, which indicates whether or not a given individual purchases a caravan insurance policy. In this data set, only 6% of people purchased caravan insurance.
