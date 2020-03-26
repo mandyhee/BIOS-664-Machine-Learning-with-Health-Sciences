@@ -1,0 +1,100 @@
+---
+title: "BIOS 664 HW4"
+author: "Meng-Ni Ho, Chun-Hui Lin"
+date: "4/22/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# library(devtools)
+# install_github("vqv/ggbiplot")
+library(knitr)
+library(dplyr)
+library(car)
+library(ggbiplot)
+library(Rtsne)
+```
+
+# Background and Introduction
+The primary goal of this project is to apply unsupervised learning algorithms to detect the population structure using the DNA information from samples. In this case, each sample is represented by 2,540 genetic markers (more precisely, SNPs) from the human genetic diversity panel (HGDP) data. Although each marker may provide very limited population structure information, the combination of all the markers can potentially improved the performance of population clustering dramatically.
+
+# Problems
+
+### Load data: 
+V2: country, V3: continent, V4 ~ V927: genetics
+```{r}
+df = read.table("hgdp.dat")
+dim(df) 
+```
+
+### Recode:
+AA = 0,  AG = 1,  GA = 2,  GG = 3, CC = 4, CT = 5, TT = 6, TC = 7, CG = 8, GC = 9, GT = 10,TG = 11 
+
+```{r}
+# recode genotype to integer
+recode2 = function(col){
+  return(recode(col, '"AA" = 0; "AG" = 1;  "GA" = 2;  "GG" = 3; "CC" = 4; "CT" = 5; "TT" = 6; "TC" = 7; "CG" = 8; "GC" = 9; "GT" = 10; "TG" = 11'))
+}
+df2 = data.frame(lapply(df, as.character), stringsAsFactors=FALSE)
+df3 = as.data.frame(sapply(df2, recode2))
+name = df3 %>% select(V1, V2, V3) %>% mutate(V1 = as.numeric(V1))
+df4 = data.frame(lapply(df3[,c(1,4:2543)], as.numeric), stringsAsFactors=FALSE)
+df5 = merge(name, df4, by = 'V1')
+
+```
+
+
+### 1. Use PCA to explore the population structure using the only the genotype data (i.e., ignore sampling location and continent information for now).
+
+```{r}
+pca = prcomp(df5[,c(4:2543)], center = TRUE,scale. = TRUE)
+result = summary(pca)
+variance = as.data.frame(result$importance)
+var_ex = variance[which(variance[2,] > 0.01)]
+dim(var_ex) 
+kable(var_ex)
+```
+
+
+### 2. Visualize the cluster structures identified from PCA, color each sample point using its continental information. (you may wish to plot multiple pairs of PCs)
+
+```{r}
+ggbiplot(pca) + ggtitle("PC1 vs PC2, without label")
+# "PC1 vs PC2"
+ggbiplot(pca, ellipse = TRUE,  labels = df5$V3, groups=df5$V3) + 
+  ggtitle("PC1 vs PC2") + theme_minimal() + theme(legend.position = "bottom")
+# "PC3 vs PC4"
+ggbiplot(pca, ellipse=TRUE, choices=c(3,4), labels=df5$V3, groups=df5$V3) + 
+  ggtitle("PC3 vs PC4") + theme_minimal() + theme(legend.position = "bottom")
+# "PC5 vs PC6"
+ggbiplot(pca, ellipse=TRUE, choices=c(5,6), labels=df5$V3, groups=df5$V3) + 
+  ggtitle("PC5 vs PC6") + theme_minimal() + theme(legend.position = "bottom")
+```
+
+
+### 3. Comment on the cluster structures identified from the PCA analysis.
+By looking at the plot, PC1 (explained 3.9% variation) vs PC2 (explained 3.7% variation) appear to have a better cluster when grouping by continent, with central South Asia, Europe closer to the center, and Africa being the most apart from center. However, when looking at PC3 (explained 1.6% variation) vs PC4 (explained 1.1% variation), American seems to be the most apart from center. PC5 vs PC6 did not show much clustering, since all the groups were aggregated together.
+
+### 4. Do research on the emerging technique known as “t-distributed stochastic neighbor embedding”, or, t-SNE, apply it to the data set. Summarize its connection and difference with PCA. Comment on the t-SNE result in comparison to the PCA result of the HGDP data.
+
+* t-Distributed Stochastic Neighbor Embedding (t-SNE) is a technique for dimensionality reduction that is particularly well suited for the visualization of high-dimensional datasets.
+```{r}
+labels = df3$V3
+df3$V3 = as.numeric(df3$V3)
+colors = rainbow(length(unique(df3$V3)))
+names(colors) = unique(df3$V3)
+# reduce to 2-dim
+tsne = Rtsne(df3[,-c(1:3)], dims = 2, perplexity=30, verbose=TRUE, max_iter = 500)
+summary(tsne)
+```
+
+```{r}
+# display the results of t-SNE
+# tsne$Y: Matrix containing the new representations for the objects
+plot(tsne$Y, t='n', main="tsne", xlab = "X", ylab = "Y")
+text(tsne$Y, labels=df3$V3, col=colors[df3$V3])
+legend("topleft", legend=c("AFRICA", "AMERICA", "CENTRAL_SOUTH_ASIA", "EAST_ASIA", "EUROPE", "MIDDLE_EAST", "OCEANIA"), col = c("#FF0000FF", "#FFDB00FF", "#49FF00FF", "#00FF92FF", "#0092FFFF", "#4900FFFF", "#FF00DBFF" ), lty=1, cex=0.4)
+```
+  
+By looking at the tsne plot, Africa (1) and America (2) seems to be apart from the other continents, this correspond to the results in PC1 vs PC2 (Africa being the most apart), and PC3 vs PC4 (America being the most apart).

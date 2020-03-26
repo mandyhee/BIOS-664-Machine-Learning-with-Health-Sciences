@@ -1,0 +1,287 @@
+---
+title: "BIOS 664 HW3"
+author: "Meng-Ni Ho"
+date: "4/8/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(caret)
+library(ada)
+library(MASS)
+library(car) # corr
+library(dplyr)
+library(tibble) # rows_to_columns
+library(pheatmap) # heatmap
+library(plyr) # mapvalues
+library(varhandle) # unfactor
+library(knitr)
+```
+
+# Background and Introduction
+In this assignment, we will solve a classification problem using the `Caravan` dataset including in the R library `ILSR`. This data set includes 85 predictors that measure demographic characteristics for 5,822 individuals. The binary response variable (last column of the data matrix) is `Purchase`, which indicates whether or not a given individual purchases a caravan insurance policy. In this data set, only 6% of people purchased caravan insurance.
+
+### Load data:
+```{r}
+require(ISLR)
+attach(Caravan)
+dim(Caravan)
+names(Caravan)
+data = Caravan
+set.seed(109)
+```
+
+## Feature selection:
+Since there are 86 variables, use VIF and correlation to filter out relevant variables for training  
+1. VIF: include variables with VIF < 9  
+2. Spearman correlation: include variables with coefficients < 0.01
+
+### filter step 1: VIF
+```{r}
+full_model = glm(factor(Purchase) ~ ., data = data, family = binomial(link = 'logit'))
+VIF = vif(full_model)
+VIF = as.data.frame(VIF)
+# select VIF < 9
+VIF_select = VIF %>% 
+  tibble::rownames_to_column('parameters') %>%
+  dplyr::filter(VIF < 9)
+
+# extract parameters 
+vif_par_selected = VIF_select['parameters']
+vif_par_selected = as.vector(vif_par_selected$parameters)
+# create new data using extracted parameters
+data_vif_filter = data %>% dplyr::select(Purchase, vif_par_selected) 
+print("dimensions for data_vif_filter: ")
+print(dim(data_vif_filter))
+print("column names for data_cor_filter: ")
+print(names(data_vif_filter))
+```
+
+### filter step 2: Spearman Correlation
+```{r}
+# transform Purchase from factor to numeric to perform correlation
+levels(data_vif_filter$Purchase)[1] = 0
+levels(data_vif_filter$Purchase)[2] = 1
+data_vif_filter = transform(data_vif_filter, Purchase = as.numeric(Purchase)) 
+# correlation heatmap for "data_vif_filter"
+print("correlation heatmap for data_vif_filter")
+pheatmap(cor(data_vif_filter, method = 'spearman'))
+# Spearman correlation
+corr = cor(data_vif_filter, method = 'spearman')
+# select correlation > 0.01
+corr_select = as.data.frame(corr) %>% 
+  tibble::rownames_to_column('parameters') %>%
+  dplyr::filter(abs(Purchase) > 0.01) %>%
+  dplyr::select(parameters, Purchase)
+
+# extract parameters 
+corr_par_selected = corr_select['parameters']
+corr_par_selected = as.vector(corr_par_selected$parameters)
+# create new data with selected parameters
+data_cor_filter = data_vif_filter %>% dplyr::select(Purchase, corr_par_selected) 
+
+# correlation heatmap for "data_cor_filter"
+print("correlation heatmap for data_cor_filter")
+pheatmap(cor(data_cor_filter, method = 'spearman'))
+print("dimensions for data_cor_filter: ")
+dim(data_cor_filter)
+print("column names for data_cor_filter: ")
+names(data_cor_filter)
+```
+
+* `data_cor_filter` will be our final data for training
+
+
+## Create Training and Testing Datasets
+Use the following R code to standardize the covariate data, and split the complete the data matrix into the 
+testing (first 1000 observations) and training datasets (remaining observations)
+
+```{r}
+standardized.X=scale(data_cor_filter[,-1])
+test =1:1000
+train.X=standardized.X[-test ,]
+test.X=standardized.X[test ,]
+train.Y=Purchase [-test]
+test.Y=Purchase [test]
+
+# training set
+train = cbind(as.data.frame(train.Y), train.X)
+colnames(train)[colnames(train) == "train.Y"] = "Purchase"
+# testing set
+test = cbind(as.data.frame(test.Y), test.X)
+colnames(test)[colnames(test) == "test.Y"] = "Purchase"
+```
+
+## Problems
+### Question 1: Train the following ML algorithms on the training datasets, compute the expected classification errors for each method using cross-validation.
+* logistic regression   
+* linear discriminant analysis   
+* support vector machine with linear kernel   
+* support vector machine with radial kernel   
+* feed-forward neural network (single or multiple hidden layers)   
+* AdaBoost   
+
+```{r, results='hide'}
+## 10-fold CV
+fitControl = trainControl(method = "cv", number = 10, savePredictions = TRUE, classProbs=TRUE)
+
+log_reg = train(factor(Purchase) ~ ., data = train, method = "glm", family = binomial(), trControl = fitControl)
+
+LDA = train(factor(Purchase) ~ ., data = train, method = "lda", trControl = fitControl)
+
+svmLinear = train(factor(Purchase) ~ ., data = train, method = "svmLinear", trControl = fitControl)
+
+svmRadial = train(factor(Purchase) ~ ., data = train, method = "svmRadial", trControl = fitControl)
+
+nn = train(factor(Purchase) ~ ., data = train, method = "nnet", trControl = fitControl)
+
+ada = train(factor(Purchase) ~ ., data = train, method = "ada", trControl = fitControl)
+
+log_reg_err = 1 - log_reg$results['Accuracy'][[1]]
+LDA_err = 1 - LDA$results['Accuracy'][[1]]
+svmLinear_err = 1 - svmLinear$results['Accuracy'][[1]]
+svmRadial_err = 1 - svmRadial$results['Accuracy'][[1]][1]
+nn_err = 1 - nn$results['Accuracy'][[1]][1]
+ada_err = 1 - ada$results['Accuracy'][[1]][1]
+
+# Error
+error = as.data.frame(cbind("-", format(log_reg_err, digits = 3), 
+                            format(LDA_err, digits = 3), 
+                            format(svmLinear_err, digits = 3), 
+                            format(svmRadial_err, digits = 3), 
+                            format(nn_err, digits = 3), format(ada_err, digits = 3)))
+colnames(error) = c('classification error', 'logistic regression', 'LDA', 'SVM-Linear','SVM-Radial', 'Neural Network', 'AdaBoost')
+```
+
+
+* Results from training:
+```{r}
+log_reg
+LDA
+svmLinear
+svmRadial
+nn
+ada
+```
+
+
+* Classification error:
+```{r}
+kable(error)
+```
+
+
+* Answer: svmLinear, Neural Network, Adaboost has the smaller error rate.
+
+
+### Question 2: Evaluate the classification algorithms on the testing dataset. Are the expected classification errors computed above accurate?
+
+```{r}
+# logistic regression
+log_reg_pred = predict(log_reg, test)
+confusionMatrix(log_reg_pred,test$Purchase)
+log_reg_pred_err = 1-confusionMatrix(log_reg_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+# LDA
+LDA_pred = predict(LDA, test)
+confusionMatrix(log_reg_pred,test$Purchase)
+LDA_pred_err = 1-confusionMatrix(LDA_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+# svmLinear
+svmLinear_pred = predict(svmLinear, test)
+confusionMatrix(svmLinear_pred,test$Purchase)
+svmLinear_pred_err = 1-confusionMatrix(svmLinear_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+# svmRadial
+svmRadial_pred = predict(svmRadial, test)
+confusionMatrix(svmRadial_pred,test$Purchase)
+svmRadial_pred_err = 1-confusionMatrix(svmRadial_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+# NN
+nn_pred = predict(nn, test)
+confusionMatrix(nn_pred,test$Purchase)
+nn_pred_err = 1-confusionMatrix(nn_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+# AdaBoost
+ada_pred = predict(ada, test)
+confusionMatrix(ada_pred,test$Purchase)
+ada_pred_err = 1-confusionMatrix(ada_pred,test$Purchase)$overall['Accuracy'][[1]]
+
+
+# Error
+err_pred = as.data.frame(cbind("-", format(log_reg_pred_err, digits = 3), format(LDA_pred_err, digits = 3), format(svmLinear_pred_err, digits = 3), 
+                               format(svmRadial_pred_err, digits = 3), format(nn_pred_err, digits = 3), format(ada_pred_err, digits = 3)))
+colnames(err_pred) = c('classification error', 'logistic regression', 'LDA', 'SVM-Linear','SVM-Radial', 'Neural Network', 'AdaBoost')
+```
+
+
+* Classification error for testing set:
+```{r}
+kable(err_pred)
+```
+
+
+* Error rate is similar to training data.
+
+### Question 3: Build a best ensemble classifier using the existing built classifiers from question 1. Is the performance better?
+
+#### 1. use all the algorithms for voting
+```{r}
+# change level
+log_reg_pred = mapvalues(log_reg_pred, from = c("No", "Yes"), to = c(0, 1))
+LDA_pred = mapvalues(LDA_pred, from = c("No", "Yes"), to = c(0, 1))
+svmLinear_pred = mapvalues(svmLinear_pred, from = c("No", "Yes"), to = c(0, 1))
+svmRadial_pred = mapvalues(svmRadial_pred, from = c("No", "Yes"), to = c(0, 1))
+nn_pred = mapvalues(nn_pred, from = c("No", "Yes"), to = c(0, 1))
+ada_pred = mapvalues(ada_pred, from = c("No", "Yes"), to = c(0, 1))
+
+# adding up prediction results using all the algorithms
+vote_vec1 = as.vector(unfactor(log_reg_pred)) + as.vector(unfactor(LDA_pred)) + as.vector(unfactor(svmLinear_pred)) + 
+  as.vector(unfactor(svmRadial_pred)) + as.vector(unfactor(nn_pred)) + as.vector(unfactor(ada_pred))
+table(vote_vec1)
+
+# create empty ensemble prediction list
+ensemble_pred1 = rep(0, length(vote_vec1))
+# sum up predictions, voting >= 3, code ensemble_pred1 to 1, < 3 will be code to 0
+ensemble_pred1[vote_vec1 >= 3] = 1
+table(ensemble_pred1, test$Purchase)
+
+ensemble_accuracy1 = (937+1)/1000
+ensemble_error1 = 1 - ensemble_accuracy1
+
+
+```
+
+#### 2. use only svmLinear, NN, Adaboost (smaller error) for voting
+```{r}
+# if only using three algorithms with lowest error: svmLinear, nn, adaboost
+vote_vec2 = as.vector(unfactor(svmLinear_pred)) + as.vector(unfactor(nn_pred)) + as.vector(unfactor(ada_pred))
+table(vote_vec2)
+ensemble_pred2 = rep(0, length(vote_vec2))
+ensemble_pred2[vote_vec2 >= 3] = 1
+table(ensemble_pred2, test$Purchase)
+
+ensemble_accuracy2 = (941)/1000
+ensemble_error2 = 1 - ensemble_accuracy2
+
+```
+
+
+```{r}
+print(paste("ensemble error using all algorithms: ", format(ensemble_error1, digits = 3)))
+print(paste("ensemble error using svmLinear, NN, AdaBoost: ", format(ensemble_error2, digits = 3)))
+```
+
+* Using svmLinear, NN, AdaBoost to build ensemble classifier produced smaller error than using all algorithm; however, the error is the same as using svmLinear, NN, AdaBoost alone. Therefore using ensemble classifier didn't reduce error.
+
+
+
+### Question 4: Comment on/propose possible approaches to improve the classifier.
+One way that may improve classifier performance is feature selection (reduce dimension). Since the dataset contains 86 variables, we will only need the variables that are most relevant and with less degrees of noises. Using Pearson correlation can help filter out the features that are most correlated with the outcome ("Purchase"). Additionally, accessing collinearity can also filter out features that are highly correlated with each other. Above methods are the strategies I used before conducting ML training. However, most effective strategy is to conduct *principle component analysis (PCA)*, which can help reduce dimension but still retain the variation presented in the training data.
+
+
+
+
+
+
