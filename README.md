@@ -18,9 +18,9 @@ For this homework, use the R code in the "simple classification.R" to generate a
 
 ## Homework 2 Instruction
 The primary goal of this assignment is to construct linear prediction algorithms to predict gene expression levels using genetic variants.  
-This is an active research area in genetics and genomics, and the following papers provide some background on this topic if interested.
-Gamazon et al. A gene-based association method for mapping traits using reference transcriptome data [link](https://www.nature.com/articles/ng.3367)
-Gusev et al. Integrative approaches for large-scale transcriptome-wide association studies [link](https://www.nature.com/articles/ng.3506) 
+This is an active research area in genetics and genomics, and the following papers provide some background on this topic if interested.   
+[Gamazon et al. A gene-based association method for mapping traits using reference transcriptome data](https://www.nature.com/articles/ng.3367)  
+[Gusev et al. Integrative approaches for large-scale transcriptome-wide association studies](https://www.nature.com/articles/ng.3506)    
 
 The whole data set contains text formatted data files for 2 genes: ENSG00000238142.1 and ENSG00000146574.15, as indicated by the corresponding file names. There are 3 separate files for each gene:
 1. genotype data for training samples (named as `ENSG###.training_geno.dat` ): genotype data matrix (Nxp) for a given gene. For all genes, training data sample size N=570. The numbers of candidate SNPs ( i.e., the predictors) are 5230 and 7788 for ENSG00000238142.1 and ENSG00000146574.15, respectively. 
